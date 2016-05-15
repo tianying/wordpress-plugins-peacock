@@ -13,7 +13,7 @@ function custom_type_list_shortcode( $atts ) {
 	$args = array(
 		'post_type' => $type,
 		'showposts' => $pagenum,
-		'offset'    => $paged,
+		'offset'    => $offset,
 		'paged'     => $paged
 	);
 
@@ -37,6 +37,103 @@ function custom_type_list_shortcode( $atts ) {
 }
 
 add_shortcode('custom_type_list', 'custom_type_list_shortcode');
+
+function custom_type_tax_list_shortcode( $atts ) {
+
+	extract(shortcode_atts(array(
+		'type' => 'news',
+		'tax' => 'news_category',
+		'category' => 'group',
+		'pagenum' => 10
+	), $atts));
+
+	$category = ( get_query_var('category') ) ? get_query_var('category') : 'group';
+	$paged = ( get_query_var('paged') ) ? get_query_var('paged') : 0;
+								
+	$args = array(
+		'post_type' => $type,
+		'tax_query' => array(
+            array(
+                'taxonomy' => $tax,
+                'field'    => 'slug',
+                'terms'    => $category
+                ),
+            ),
+		'showposts' => $pagenum,
+		'offset'    => $offset,
+		'paged'     => $paged
+	);
+
+	query_posts($args);
+
+	while (have_posts()) : the_post();  ?>
+
+		<p>									
+			<a href="<?php echo the_permalink() ?>" target="_blank"><?php echo get_the_title(); ?></a>
+			<span class="data"><?php the_time('Y-m-d G-H');?> </span>
+		</p>	
+
+	<?php endwhile;
+
+	wp_pagenavi();
+	wp_reset_postdata();
+
+
+	//return 
+	//return var_dump( $paged.'|'.$category );
+}
+
+add_shortcode('custom_type_tax_list', 'custom_type_tax_list_shortcode');
+
+class Walker_Simple_Example extends Walker_Category {  
+
+    function start_lvl(&$output, $depth=0, $args=array()) {  
+        $output .= "\n<ul class=\"product_cats\">\n";  
+    }  
+
+    function end_lvl(&$output, $depth=0, $args=array()) {  
+        $output .= "</ul>\n";  
+    }  
+
+    function start_el(&$output, $item, $depth=0, $args=array()) {  
+		if ( get_query_var('category') == $item->slug ) {
+		  $output .= "<dd class=\"hover\"><span><a class=\"\" href=\"/news/".esc_attr( $item->slug )."/page/1\">".esc_attr( $item->name );
+		} else {
+		  $output .= "<dd class=\"\"><span><a class=\"\" href=\"/news/".esc_attr( $item->slug )."/page/1\">".esc_attr( $item->name );
+		}        
+    }  
+
+    function end_el(&$output, $item, $depth=0, $args=array()) {  
+        $output .= "</a></span></dd>\n";  
+    }  
+} 
+
+function custom_type_category_list_shortcode( $atts ) {
+
+	extract(shortcode_atts(array(
+		'taxonomy' => 'news_category'
+	), $atts));
+
+							
+	$args = array(
+		'taxonomy' => $taxonomy,
+		'walker' => new Walker_Simple_Example,
+		'title_li' => __( '' ),
+		'orderby' => 'id',
+		'depth' => 1
+	);
+
+	wp_list_categories($args);
+
+
+	
+
+
+	//return wp_list_categories($args);
+	//return var_dump( $paged.'|'.$category );
+}
+
+add_shortcode('custom_type_category_list', 'custom_type_category_list_shortcode');
 
 function custom_type_content_shortcode( $atts ) {
 
